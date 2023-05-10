@@ -1,0 +1,116 @@
+---
+title: "US INTEREST RATES: IMPACT ON DOMESTIC AND GLOBAL ECONOMY"
+author:
+  - name: Katherine Cartiglia, Samiksha Rajendra Thikekar, Qian Chen, Yao Liu.
+    affiliations:
+    - name: Georgetown University
+format: 
+  pdf:
+    classoption: onecolumn
+    fig_caption: true
+    template-partials: 
+      - title.tex
+      - before-body.tex
+    include-in-header:
+      text: |
+        \usepackage{lipsum}
+        \usepackage[noblocks]{authblk}
+        \renewcommand*{\Authsep}{, }
+        \renewcommand*{\Authand}{, }
+        \renewcommand*{\Authands}{, }
+        \renewcommand\Affilfont{\small}  
+    embed-resources: true
+    self-contained: true
+---
+
+## Introduction
+
+Housing prices, employment ratio, international markets, global investment, future business, and the stock market each have one thing in common: the US interest rate. The US interest rate is set by the Federal Reserve (the “Fed”), a financial governing body located in Washington, DC, with regional branches located around the US. As the world has recovered from the COVID-19 economic crisis, the Fed has chosen to increase interest rates, which is having a cascading effect around the globe. Many other countries follow the US interest rate, and investors in the US and around the world dictate their investment spending based on this one number. In this project, we are going to dive into some of the relationships between the US interest rate and other US and global economic indicators to better understand what this rate means and what it affects.
+
+The US interest rate, or the Federal Funds Rate, is the interest rate set by the Fed for commercial banks’ lending. It is one of many interest rates set by the Fed that affects the global economy. The Fed adjusts its rate to encourage or discourage spending, depending on the global economic environment. When the Fed raises rates, it discourages investment and slows down the economy; when it lowers rates, it promotes spending and spurs growth. With inflation rising, the Fed has decided to raise rates to balance economic growth against rising prices. The Fed is also raising rates now so that it can lower them in the future to encourage growth, where an economic downturn occurs. In this project, we seek to examine how this  interest rate affects the US and global economy via many analysis techniques learned throughout the year.
+
+We investigated four primary aspects of the impact of the US interest rate: how it impacts foreign investment in the US, how it impacts foreign interest rates, how it impacts the employment-population ratio, and what future rates will be. We utilized a number of different methods to delve into these relationships to better understand how the US interest rate impacts various aspects of the economy.
+
+## Analysis and Methods
+
+*INTEREST RATES AND FOREIGN INVESTMENT*
+To investigate the relationship between US interest rates and foreign investment in the US, multiple methodologies were employed including correlation analysis, Lasso regression, and random forest. Lasso regression was used for feature selection to select a subset of relevant features and reduce the impact of irrelevant ones. To find the optimal value of the regularization parameter (lambda), 10-fold cross-validation was performed, which helps prevent overfitting and balance model complexity and performance. The Random Forest Method was applied to address the issue of multicollinearity among independent variables and improve the accuracy of the model. Random forest is also well-suited for modeling non-linear relationships between explanatory variables and the response variable and can provide a measure of feature importance. Overall, these methodologies were used to examine the relationship between US interest rates and foreign investment in the US and identify the most important independent variables in the model.
+
+*US AND INTERNATIONAL INTEREST RATES*
+This interest rate does not just affect domestic economic variables; it also impacts the
+international marketplace and how other international central banks function. By comparing the
+progress of the US interest rate with a select number of other countries’ interest rates, we can
+conduct a thorough analysis of how this rate impacts the geoeconomic climate.
+To investigate the relationship between US interest rates and foreign interest rates, a thorough
+analysis was conducted to find polynomial and other regressions that could determine the
+relationship between these rates. Figures 1 and 2 are general analyses of the international interest
+rates selected for this analysis.
+
+![Boxplot of Rate Values](../img/International Interest Rates/boxplot-interest-rates.png)
+![International Rates](../img/International Interest Rates/international interest rates.png)
+Using polynomial regression analysis and model matrices to supplement error analysis, US
+interest rates were regressed on the interest rates in Brazil, Canada, Great Britain, Japan, South
+Africa, France, Italy, and China. Using polynomials of up to ten degrees, a polynomial regression
+was able to be determined for each of these countries based on their response to shifts in the US
+interest rate, indicating the macroeconomic weight this rate has on international economies.
+
+*PREDICTING FUTURE INTEREST RATES*
+In this study, a feedforward artificial neural network (ANN) was employed to predict interest rates for the next 12 months based on historical data. The ANN architecture consisted of a single hidden layer containing 32 neurons, and a linear output layer containing 12 neurons. To ensure proper representation of the data and minimize overfitting, the dataset was partitioned into 80% for training and 20% for testing purposes. To scale the interest rate data between 0 and 1, the MinMaxScaler was utilized for normalization. The ANN model was trained using the Adam optimizer, a popular optimization algorithm that performs well on a wide range of problems. To minimize the error between predicted and actual interest rates, the mean squared error (MSE) loss function was employed. The model was trained for 100 epochs to find the optimal weights and biases.
+
+*INTEREST RATES AND EMPLOYMENT- POPULATION RATIO*
+The employment population ratio is an important indicator of economic health that measures the proportion of a country's population that is employed. We aim to forecast the employment population ratio using linear regression and a dataset of economic and demographic variables. The objective of the study was to examine the association between Employment Population Ratio and Interest Rate, employing a linear regression model, while comparing the findings with those obtained from ridge and LASSO regression models. A dataset comprising variables such as employment population ratio, inflation, gross domestic product (GDP), unemployment rate, and federal funds rate was utilized for this purpose. The sample population was selected from the period between 2009 and 2022. We analyzed the dataset and built a linear regression model using all other variables in the dataset as predictors for the employment population ratio. We randomly split the dataset into a training set (70% of the data) and a test set (30% of the data). We trained the model on the training set and used it to forecast the employment population ratio for the test set.
+
+##Results
+
+*INTEREST RATES AND FOREIGN INVESTMENT*
+
+![Correlation between Foreign Investment In the US and US Annual Interest Rates Across Countries](../img/International_Investment/Correlation between Foreign Investment in the US .png)
+
+The Figure 3 below provides information on the correlation between foreign investment in the US and US annual interest rates across various countries. The coefficient values indicate the strength and direction of the correlation. A majority of the countries listed in the figure show a negative correlation between foreign investment in the US and US annual interest rates, which means that as foreign investment in the US increases, US annual interest rates decrease. This trend is observed in countries like Canada, Austria, Belgium, Denmark, France, Germany and Italy. However, a few countries like Venezuela show a positive correlation, meaning that as foreign investment in the US increases, US annual interest rates increase. This can be attributed to different economic conditions and factors unique to these countries.
+
+![Multicollinearity Issue](../img/International_Investment/multicollinearity.png)
+![Variable Importance Table](../img/International_Investment/Variable_Importance_Measure.png)
+
+The Lasso Regression analysis reveals that the months of January, February, April, June, July, August, September, November, and December significantly influence the relationship between US interest rates and international investment. However, the correlation and coefficient table (Figure 4) indicate a high degree of multicollinearity among the explanatory variables, it can be difficult to identify the true relationship between each variable and the response variable. As a remedy, Random Forest methodology is employed to address the issue.And the outcomes from Figure 5 indicate that the months of July, May, and June are the top three influential factors that affect the relationship between global investment and US interest rates. This information can be useful for investors and financial institutions in making informed decisions about when to invest in the US and when to adjust their portfolios based on changing interest rates. 
+
+Secondly, it provides insight into the global economic climate and how different regions may be affected by changes in US interest rates. Additionally, the findings can inform policymakers about the potential impact of US interest rate changes on foreign investment and can help guide decisions on monetary policy. Overall, the study's results highlight the interconnectedness of the global economy and the importance of understanding the relationship between US interest rates and foreign investment.
+
+*US AND INTERNATIONAL INTEREST RATES*
+![Correlation Matrix](../img/International Interest Rates/correlation-matrix.png)
+Figure 6 is a correlation matrix of the interest rates selected that had all of the necessary time components. The most accurate model was the Canadian regression, indicating a closeness between the US federal funds rate and the Canadian equivalent. Using polynomial regression analysis, we determined that the relationship between the US interest rate and the Canadian interest rate is as follows:
+
+CAN = 2.31099 + 12.80799\times US - 0.68637\times US^3 + 0.61049\times US^5
+```{r, echo=FALSE}
+Adjusted_R2 <- 0.9112
+RMSE <- 0.21189
+cat("Adjusted R2 =", Adjusted_R2, "\n")
+cat("RMSE =", RMSE, "\n")
+```
+
+These factors were significant at the five percent confidence level. The model indicated that the most significant term was the linear term, showing that Canadian interest rates respond nearly directly to US interest rates, with no time delay.
+
+In conclusion, we found here that the US interest rate does impact international interest rates. This could be due to the predominance of US financial matters around the world. There are other avenues for continued analysis of these factors. This analysis was conducted with no time delay; another avenue  of research would be to see how the US interest rate                             Figure-6: Correlation Matrix
+impacted international interest rates at t plus a given amount of time. This could help us better understand if these other rates respond to US rates after a given time period, presumably time enough for the respective governments to implement said policy.
+
+*PREDICTING FUTURE INTEREST RATES*
+After training, we feed in the US interest rate for the past 12 months, and the model generated the following predicted interest rates for the next 12 months: [3.40061, 3.2633395, 3.116406, 3.1349454, 3.1586962, 3.1657314, 2.9293292, 2.9171336, 2.7995944, 2.9431086, 2.8514345, 2.5598798]. A visual comparison of the actual and predicted interest rates indicated that the model managed to capture some of the trends in the data. However, there is still room for improvement in the model's performance.
+
+![ANN Model](../img/Predict_US_Interest_Rate/output_graph.png)
+The developed ANN model (Figure 7) provides a foundation for predicting interest rates over the next 12 months based on historical data. The model's predictions suggest a slight decrease in interest rates during the upcoming months. It is crucial to remember that these predictions are only estimates derived from past data and may not accurately forecast future interest rates.
+
+To improve the accuracy of the model, several steps could be taken, such as incorporating additional features (e.g., macroeconomic indicators, inflation rates), using more advanced models (e.g., recurrent neural networks or long short-term memory networks), and fine-tuning hyperparameters. Furthermore, it is essential to consider other factors and consult expert opinions when making decisions based on these predictions, as interest rates are influenced by a complex interplay of economic, political, and social factors.
+
+*INTEREST RATES AND EMPLOYMENT-POPULATION RATIO*
+We found that our linear regression model was able to accurately forecast the employment population ratio, with a root mean squared error (RMSE) of 1.13. The results also show that interest rates have a statistically significant positive relationship with employment population ratio, with a coefficient estimate of 0.602. Inflation rate has a statistically significant negative relationship with employment population ratio, with a coefficient estimate of -0.537. None of the other independent variables have statistically significant relationships with employment population ratio. We also compared the performance of our linear regression model to ridge and LASSO regression models. The results showed that our linear regression model had the lowest RMSE (1.13) compared to the ridge (1.35) and LASSO (1.14) models. This suggests that the linear regression model was the most effective at accurately forecasting the employment population ratio.
+
+Our results reveal that changes in interest rates greatly impact employment rates, and it is essential for policymakers and economists to consider these variables when making decisions that influence the labor market. However, the study has limitations, such as not accounting for the bi-directional relationship between the  Federal Funds Rate and employment rate. For future research, it may be useful to explore other variables that could affect the employment population ratio and interest rates.
+
+## Conclusion
+
+In conclusion, the US interest rate impacts the domestic economy and international economies. This interest rate is difficult to predict, most likely because it is impacted by numerous external factors and is used to dictate other changing factors, such as employment rates and inflation. The rate set by the Fed apparently impacts numerous economic outcomes, and thus the increase or decrease in this rate is worthwhile to study and attempt to predict, as financial, foreign, investment, and future markets depend on these decisions. Overall, we found that there is much to be gained from analyzing the US Federal Funds interest rate and there is room for further analysis to find other avenues of study on how US interest rates change over time.
+
+## References
+[1] Board of Governors of the Federal Reserve System. Foreign Effects of Higher U.S. Interest Rates. Retrieved from https://www.federalreserve.gov/econres/ifdp/files/ifdp1227.pdf
+[2] OECD Data. Long-term interest rates. Retrieved from https://data.oecd.org/interest/long-term-interest-rates.htm#indicator-chart
+[3] Bureau of Economic Analysis. Direct Investment by Country and Industry. Retrieved from https://www.bea.gov/data/intl-trade-investment/direct-investment-country-and-industry
+

@@ -1,0 +1,139 @@
+---
+title: "512 employment and interate rate"
+author: Samiksha Thikekar
+format: 
+  html:
+    embed-resources: true
+    self-contained: true
+    page-layout: full
+---
+
+#import cleaned data for analysis
+```{r}
+merged_df<-read.csv("../../data/cleaned/samiksha_cleaned_data/emp_ffr.csv", header=TRUE)
+merged_df <- merged_df[,-1]
+merged_df
+```
+
+```{r}
+# Check for missing values in the data frame
+sum(is.na(merged_df))
+```
+correlation plot of all the numeric variables in the dataset
+
+```{r}
+library(corrplot)
+num_var <- merged_df %>%
+  select(where(is.numeric))
+cor.lc <- cor(num_var)
+corrplot(cor.lc)
+```
+```{r}
+set.seed(1140)
+
+train =sample(length(merged_df[,1]),0.7*length(merged_df[,1]))
+
+#Using all other variables in the dataset to forecast employment population ratio
+lml = lm(EMRATIO ~ ., data = merged_df[train,])
+
+# Using the trained model, forecast employment population ratio for the test data (i.e., rows not in the "train" index).
+pred.lm = predict.lm(lml, newdata = merged_df[-train,])
+
+# Determine the root mean squared error (RMSE) between the test data's real and projected employment population ratio.
+err.lm = sqrt(mean((merged_df$EMRATIO[-train] - pred.lm)^2))
+
+# Using the "stargazer" package, print an attractively structured summary table for the regression model.
+stargazer::stargazer(lml, type = "text", summary = TRUE, title = "Full regression model", report = "vc*stp", ci = TRUE)
+```
+
+```{r}
+cat("RMSE Error:", err.lm, "\n")
+```
+Overall, the results suggest that DFF(Effective Federal Funds Rate) and T10YIE(Inflation) are important predictors of EMRATIO (Employment ratio), while the other variables do not have a significant impact on the outcome. However, it is important to note that the sample size is very small (only 9 observations), so the results should be interpreted with caution and further research with larger samples may be necessary to confirm the findings.
+
+Fit a ridge regression model with the optimal λ chosen by cross validation. Report the CV MSE.
+```{r}
+set.seed(1140)
+library(glmnet)
+#Make a "x" design matrix with all variables acting as predictors for the linear regression model.
+x = model.matrix(EMRATIO ~ ., data = merged_df)
+
+#Using the "train" index, divide the design matrix into training and test sets.
+x.train = x[train,]
+x.predict = x[-train,]
+
+
+y = merged_df$EMRATIO[train]
+
+#Ridge regression with cross-validation should be used to determine the best regularization parameter (lambda)
+cv.ridge = cv.glmnet(x.train, y, alpha = 0, lambda.min.ratio = 0.000001)
+
+#Plot the cross-validation outcomes to see what lambda should be set to.
+plot(cv.ridge)
+```
+```{r}
+set.seed(1140)
+# summarize the findings of the cross-validation
+cv.ridgesumm <- summary(cv.ridge)
+
+#Extrapolate the coefficients for the ideal lambda value (in this case, the 3th value of lambda)
+tmp_coeffs <- coef(cv.ridge, s = cv.ridge$lambda[-1])
+
+# Output the data frame's non-zero variables' names and coefficients.
+data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficients = tmp_coeffs@x)
+```
+
+```{r}
+set.seed(1140)
+# With alpha = 0, fit a ridge regression model to the training data (i.e., ridge regression)
+ridge1 = glmnet(x.train, y, alpha = 0)
+
+# Predict employment ratio for the test data (rows not in the "train" index) using the trained model with s=16.
+pred.ridge = predict.glmnet(ridge1, newx = x.predict, s = 16, type = "response")
+
+# Determine the root mean squared error (RMSE) between the test data's real and projected rental bikes count values.
+err.ridge = sqrt(mean((merged_df$EMRATIO[-train] - pred.ridge)^2))
+
+#For the ridge regression model, print the RMSE.
+cat("rms error is:", round(err.ridge, 2))
+```
+```{r}
+set.seed(1140)
+# Use cross-validation to choose the best regularization parameter after fitting a Lasso regression model to the training data with alpha = 1. (lambda)
+lasso1 = cv.glmnet(x.train, y, alpha = 1, lambda.min.ratio = 0.000001)
+
+# Plot the cross-validation outcomes to show how lambda and model performance are related.
+plot(lasso1, xvar = "lambda", pch = 21, bg = "#336699")
+```
+
+```{r}
+set.seed(1140)
+# Fit a Lasso regression model with alpha = 1 to the training data (i.e., Lasso regression)
+lasso2 = glmnet(x.train, y, alpha = 1)
+
+# Plot the Lasso model coefficients against lambda logarithm, Here, "lwd" defines the line width, while "xvar" gives the x-axis variable.
+plot(lasso2, xvar = "lambda", lwd = 1.5)
+```
+```{r}
+set.seed(1140)
+pred.lasso = predict.glmnet(lasso2, newx = x.predict, s = lasso1$lambda.lse, type = "response")
+
+# Determine the Lasso model's root mean squared error for the test set.
+err.lasso = sqrt(mean((merged_df$EMRATIO[-train] - pred.lasso)^2))
+cat("rms error is:", round(err.lasso, 2))
+```
+```{r}
+library(kableExtra)
+model = c( "Full Regression Model", "Ridge Model", "Lasso Model")
+rmse = c( round(err.lm,2),round(err.ridge, 2),round(err.lasso, 2))
+RMSE_df = cbind(model, rmse)
+colnames(RMSE_df) = c("Model", "RMSE (dimensionless)")
+
+RMSE_df |>
+    kbl() |>
+    kable_styling(bootstrap_options = "striped", full_width = T,
+        position = "center", font_size = 10)
+```
+
+
+

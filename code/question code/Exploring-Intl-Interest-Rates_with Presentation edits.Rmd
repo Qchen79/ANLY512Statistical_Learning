@@ -1,0 +1,197 @@
+---
+title: "Related Interest Rates"
+output: html_document
+date: "2023-04-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Finding Relationships Between International Interest Rates
+
+For this project, we are exploring the US federal funds rate and how that impacts various other things in the US and around the world. This portion of the project will deal with other federal funds rates of other countries. We are trying here to track how the US federal funds rate impacts the central bank interest rates of Brazil, Canada, China, France, Great Britain, Italy, Japan, and South Africa as they compare to the US. We chose this variety of countries to find a diversity of geographic and developmental countries. Notably, not all countries have a central bank-set federal funds rate, so we found as diverse a set of countries as possible. Here, I explore the relationship between these rates and how they behave compared to the US rate.
+
+```{r}
+library('readr')
+interestrates <- read_csv('~/Downloads/interest-rates-clean.csv')
+head(interestrates)
+interestrates_clean = interestrates
+table(interestrates_clean$LOCATION)
+```
+
+## Exploratory Data Analysis
+
+Here, we have the interest rates of the relevant countries over time. First, I'll conduct some exploratory data analysis to visualize these interest rates for some initial exploration.
+
+```{r}
+library(ggpubr)
+sp <- ggscatter(interestrates_clean, x = "TIME", y = "Value",
+                 color = "LOCATION", palette = "jco")
+sp
+```
+
+```{r}
+bp <- ggboxplot(interestrates_clean, x = 'LOCATION', y = 'Value', title = 'Boxplots of Interest Rate Values')
+bp
+```
+
+Now, we'll do some predictive analysis using multiple methods that we discussed in ANLY512. I'll go through each and then discuss the conclusions that this section relays.
+
+I'll first separate the rates by country.
+
+```{r}
+us_rates = interestrates_clean[interestrates_clean$LOCATION == 'USA',]
+can_rates = interestrates_clean[interestrates_clean$LOCATION == 'CAN',]
+ita_rates = interestrates_clean[interestrates_clean$LOCATION == 'ITA',]
+fra_rates = interestrates_clean[interestrates_clean$LOCATION == 'FRA',]
+zaf_rates = interestrates_clean[interestrates_clean$LOCATION == 'ZAF',]
+gbr_rates = interestrates_clean[interestrates_clean$LOCATION == 'GBR',]
+jpn_rates = interestrates_clean[interestrates_clean$LOCATION == 'JPN',]
+bra_rates = interestrates_clean[interestrates_clean$LOCATION == 'BRA',]
+chn_rates = interestrates_clean[interestrates_clean$LOCATION == 'CHN',]
+```
+
+And show these individual relationships in some scatterplots.
+
+```{r}
+plot(us_rates$Value, can_rates$Value)
+plot(us_rates$Value, fra_rates$Value)
+plot(us_rates$Value, zaf_rates$Value)
+plot(us_rates$Value, gbr_rates$Value)
+plot(us_rates$Value, jpn_rates$Value)
+plot(us_rates$Value, bra_rates$Value)
+```
+
+## Polynomial Regression to Predict Other Interest Rates
+
+Now, I'll use this data to try to predict other interest rates based on the US rate using a polynomial regression.
+
+```{r}
+# Fit a quadratic polynomial regression model
+model <- lm(can_rates$Value ~ poly(us_rates$Value, 2))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(can_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(fra_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(zaf_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(gbr_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(jpn_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+```{r}
+# Fit a 10 degree polynomial regression model
+model <- lm(bra_rates$Value ~ poly(us_rates$Value, 10))
+
+summary(model)
+```
+
+In each of these models, we see that various terms have significance when we take a polynomial regression. I'll focus in on one term that we saw was pretty linear with US interest rates: Canadian interest rates.
+
+```{r}
+us_rates_train = us_rates[1:100,]
+can_rates_train = can_rates[1:100,]
+
+us_rates_test = us_rates[96:195,]
+can_rates_test = can_rates[96:195,]
+
+model_can = lm(can_rates_train$Value ~ poly(us_rates_train$Value, 2))
+predict_can = predict(model_can, us_rates_test)
+
+error_rates = predict_can - can_rates_test$Value
+(mean_error_rate = mean(abs(error_rates)))
+
+
+```
+
+I'll explore some other models that may be used to predict Canadian interest rates.
+
+```{r}
+X1 = model.matrix(can_rates_train$Value ~ us_rates_train$Value) #create a design matrix
+print(head(X1))
+
+```
+
+```{r}
+X6 = model.matrix(can_rates_train$Value ~ us_rates_train$Value + I(us_rates_train$Value^2) + I(us_rates_train$Value^3) + I(us_rates_train$Value^4) + I(us_rates_train$Value^5) + I(us_rates_train$Value^6))
+print(head(X6))
+```
+
+```{r}
+X6p = model.matrix(can_rates_train$Value ~ poly(us_rates_train$Value,6))
+print(head(X6p))
+```
+```{r}
+plot(us_rates_train$Value,X6[,1], type = 'l', ylim = c(-20,80))
+matlines(us_rates_train$Value,X6[,2:7],lwd = 2)
+grid(col = 3) #plotting the polynomials with degree 1,..,6
+
+print(round(cor(X6[,2:7]),2)) 
+```
+
+
+
+```{r}
+print(round(cor(X6p[,2:7]),2))
+```
+
+```{r}
+library(Metrics)
+# Fit a 10 degree polynomial regression model
+model <- lm(can_rates_test$Value ~ poly(us_rates_test$Value, 10))
+predictions <- model %>% predict(can_rates_test)
+
+RMSE = rmse(predictions, can_rates_test$Value)
+#R2 = r2(predictions, can_rates_test$Value)
+
+RMSE
+#R2
+```
+
+```{r}
+ggplot(can_rates_test, aes(TIME, Value) ) +
+  geom_point() +
+  stat_smooth(method = lm, formula = can_rates_test$Value ~ us_rates_test$Value)
+```
+
+```{r}
+library(ggcorrplot)
+total_df = data.frame(bra_rates$Value, can_rates$Value, fra_rates$Value, gbr_rates$Value, jpn_rates$Value, us_rates$Value, zaf_rates$Value)
+corr <- round(cor(total_df), 1)
+head(corr[, 1:6])
+
+ggcorrplot(corr, title = "Correlation Matrix of Interest Rates")
+
+```
+
+

@@ -1,0 +1,43 @@
+---
+title: "Interest Rate - Data Cleaning"
+output: html_document
+date: "2023-04-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cleaning Interest Rate Data
+
+This data is the interest rates for multiple countries around the world. I'm going to make sure the data included in this sheet is only the informtation needed to answer some of our data science questions, including how US interest rates impact interest rates around the world.
+
+```{r}
+
+interestrates <- read_csv('~/Downloads/interest-rates-raw.csv')
+head(interestrates)
+
+```
+
+To answer this question, I only need the columsn LOCATION, TIME, and Value. This provides the country's interest rates at the given times. So, I'll remove the unneeded columns.
+
+```{r}
+interestrates_clean <- subset.data.frame(interestrates, select = c(LOCATION, TIME, Value))
+head(interestrates_clean)
+
+```
+
+Finally, I'll confirm that this table has each of the countries that we need in the LOCATION column. 
+
+```{r}
+table(interestrates_clean$LOCATION)
+```
+
+I'll write this to a csv to upload to our group Github.
+
+```{r}
+write.csv(interestrates_clean, '~/Downloads/interest-rates-clean.csv', row.names=FALSE)
+```
+
+
+

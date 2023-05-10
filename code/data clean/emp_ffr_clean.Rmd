@@ -1,0 +1,72 @@
+---
+title: "512 employment and interate rate data cleaning"
+author: Samiksha Thikekar
+format: 
+  html:
+    embed-resources: true
+    self-contained: true
+    page-layout: full
+---
+
+##import data
+
+```{r}
+ffr <- read.csv("../../data/raw/samiksha_data/DFF.csv", header=TRUE)
+unemp <- read.csv("../../data/raw/samiksha_data/UNRATE.csv", header=TRUE)
+gdp <- read.csv("../../data/raw/samiksha_data/GDP.csv", header=TRUE)
+inflation <- read.csv("../../data/raw/samiksha_data/T10YIE.csv", header=TRUE)
+EMRATIO <- read.csv("../../data/raw/samiksha_data/EMRATIO.csv", header=TRUE)
+```
+##Filter data
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+
+ffr$year <- format(as.POSIXlt(ffr$DATE), format="%Y")
+ffr$DATE <- NULL
+ffr <- select(ffr, year, everything())
+ffr$year <- as.integer(format(ffr$year))
+ffr_filtered <- filter(ffr, year >= 2009 & year <= 2022)
+
+unemp$year <- format(as.POSIXlt(unemp$DATE), format="%Y")
+unemp$DATE <- NULL
+unemp <- select(unemp, year, everything())
+unemp$year <- as.integer(format(unemp$year))
+unemp_filtered <- filter(unemp, year >= 2009 & year <= 2022)
+unemp_filtered$UNRATE <- as.double(unemp_filtered$UNRATE)
+
+gdp$year <- format(as.POSIXlt(gdp$DATE), format="%Y")
+gdp$DATE <- NULL
+gdp <- select(gdp, year, everything())
+gdp$year <- as.integer(format(gdp$year))
+gdp_filtered <- filter(gdp, year >= 2009 & year <= 2022)
+
+inflation$year <- format(as.POSIXlt(inflation$DATE), format="%Y")
+inflation$DATE <- NULL
+inflation <- select(inflation, year, everything())
+inflation$year <- as.integer(format(inflation$year))
+inflation_filtered <- filter(inflation, year >= 2009 & year <= 2022)
+# Convert the T10YIE columns to double
+inflation_filtered$T10YIE <- as.double(inflation_filtered$T10YIE)
+
+EMRATIO$year <- format(as.POSIXlt(EMRATIO$DATE), format="%Y")
+EMRATIO$DATE <- NULL
+EMRATIO <- select(EMRATIO, year, everything())
+EMRATIO$year <- as.integer(format(EMRATIO$year))
+EMRATIO_filtered <- filter(EMRATIO, year >= 2009 & year <= 2022)
+EMRATIO_filtered$EMRATIO <- as.double(EMRATIO_filtered$EMRATIO)
+```
+
+#merge all filtered dataframe on year column
+```{r}
+merged_df <- merge(merge(ffr_filtered, unemp_filtered, by = "year"), merge(gdp_filtered, inflation_filtered, by = "year"), by = "year")
+merged_df <- merge(merged_df, EMRATIO_filtered, by = "year")
+merged_df
+```
+
+##export the data to csv
+```{r}
+# export the data frame to a CSV file
+write.csv(merged_df, file = "../../data/cleaned/samiksha_cleaned_data/emp_ffr.csv")
+```
+

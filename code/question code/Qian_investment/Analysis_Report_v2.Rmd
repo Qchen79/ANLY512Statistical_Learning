@@ -1,0 +1,318 @@
+---
+title: 'The Impact of US Interest Rates on Foreign Investment in the US: An Analysis'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(glmnet)
+library(kableExtra)
+library(randomForest)
+```
+
+
+Foreign investment in the United States has been an essential component of the US economy, contributing to economic growth and creating jobs. Understanding the factors that influence foreign investment in the US is crucial for policymakers and investors. One such factor is the interest rates of the US. The US Federal Reserve sets interest rates to manage economic growth and inflation in the US. However, the effects of interest rate changes on foreign investment in the US are not fully understood. Some studies suggest that a decrease in interest rates can attract more foreign investment as borrowing costs decrease, while other studies suggest that an increase in interest rates can attract more foreign investment as it signals a growing economy. Additionally, the impact of interest rates may vary depending on the country of origin, and the size of the investment. Therefore, there is a need for a analysis of the relationship between US interest rates and foreign investment in the US.
+
+
+# Data Preprocession
+
+```{r}
+# Read in the CSV files
+data1 <- read.csv("us interest rate.csv")
+data2 <- read.csv("other country investment_v2.csv", header = FALSE)
+
+# Select only the necessary columns from data1 and rename the columns
+data1 %>% 
+  select(TIME, Value) -> data1
+
+# Convert the TIME column to a date format
+data1 %>% 
+  mutate(TIME = paste0(TIME, "-01")) %>% # add "-01" to the end of each date string to represent the first day of the month
+  mutate(TIME = as.Date(TIME)) -> data1 # convert the TIME column to a date format
+
+# Rename the columns in data2
+colnames(data2) <- c("Country", seq(2007, 2021))
+
+# Remove leading/trailing whitespaces from the Country column in data2
+data2 %>% 
+  mutate(Country = trimws(Country)) -> data2
+
+# Convert data2 from wide to long format using the gather() function
+data2 %>% 
+  gather(key = "Year", value = "Position", -Country) -> data2.long
+
+```
+
+
+# Initial Data Analysis
+
+```{r}
+# Create a time series plot of the US interest rate over time using ggplot2
+data1 %>% 
+  ggplot() + 
+  geom_line(aes(x = TIME, y = Value)) + # plot a line graph using the TIME column 
+  # on the x-axis and the Value column on the y-axis
+  theme_minimal() + # use a minimalist theme
+  ylab("interest rate of US") + # label the y-axis
+  ggtitle("Time Series Plot of Interest rate of US") # add a title to the plot
+
+# Create a box plot of the US interest rate by year using ggplot2
+data1 %>% 
+  mutate(year = year(TIME)) %>% # create a new year column by extracting 
+  # the year from the TIME column
+  ggplot() + 
+  geom_boxplot(aes(x = as.factor(year), y = Value)) + # plot a box plot using the 
+  # year column on the x-axis and the Value column on the y-axis
+  theme_minimal() + # use a minimalist theme
+  xlab("Year") + # label the x-axis
+  ylab("Interest rate of US") + # label the y-axis
+  ggtitle("Interest rate of US in Each Year") # add a title to the plot
+
+# Print a summary of the data using the summary() function
+data1 %>% 
+  summary()
+
+```
+
+The interest rate data for the US covers the time period from 2007 to 2023. The minimum interest rate observed during this time period is 0.620, while the maximum interest rate is 5.100. The median interest rate over this time period is 2.480, and the mean interest rate is 2.573. The first quartile, or 25th percentile, of interest rates is 1.900, and the third quartile, or 75th percentile, is 3.185. The data suggests that US interest rates have fluctuated over time, with a maximum spike of 5.100 observed in the data.
+
+
+```{r}
+# Create a correlation analysis between US interest rates and other countries' investments
+# Convert the data from long to wide format and remove any missing values
+data1 %>% mutate(month = month(TIME)) %>% 
+  mutate(TIME = substr(TIME, 1, 4)) %>% # extract the year from the TIME column
+  spread(key = "month", value = "Value") -> data1.wide # spread the data so that each month is its own column
+
+data1.wide %>% na.omit() -> data1.wide # remove any missing values from the data
+
+# Keep only the columns for years between 2007 and 2021 and convert TIME to numeric
+data1.wide %>% 
+  mutate(TIME = as.numeric(TIME)) %>% 
+  filter(TIME %in% seq(2007, 2021)) -> data1.wide
+
+# Calculate the mean US interest rate for each year
+data1.wide[,2:ncol(data1.wide)] %>% rowMeans() -> rate.mean
+
+# Calculate the correlation between each country's investment and the US interest rate mean
+apply(data2[,2:ncol(data2)], MARGIN = 1, FUN = function(x){
+  cor(x, rate.mean)
+}) -> country.corr
+
+# Create a data frame with the correlation coefficient for each country
+data.frame(Country = data2$Country, 
+           coef = country.corr) -> country.df.corr
+
+# Rename the correlation coefficient column and print the table using kable() and kable_styling()
+country.df.corr %>% 
+  rename(`Correlation_Coefficient` = "coef") %>% 
+  kable() %>% 
+  kable_styling(position = "center")
+
+```
+
+
+```{r}
+country.df.corr %>% 
+  ggplot() + 
+  geom_col(aes(y = reorder(Country, coef),  x= coef,fill="#d85847")) + 
+  coord_flip() + 
+  theme_minimal() + 
+  ylab("Correlation Coefficients") + 
+  xlab("Country") + theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ggtitle("Correlation between Foreign Investment in the US and 
+          US Annual Interest Rates Across Countries")
+```
+
+
+The table and figure above provide information on the correlation between foreign investment in the US and US annual interest rates across various countries. The coefficient values indicate the strength and direction of the correlation.
+
+A majority of the countries listed in the table show a negative correlation between foreign investment in the US and US annual interest rates, which means that as foreign investment in the US increases, US annual interest rates decrease. This trend is observed in countries like Canada, Austria, Belgium, Denmark, France, Germany, Italy, the Netherlands, South Africa, and Taiwan.
+
+However, a few countries like Venezuela and India show a positive correlation, meaning that as foreign investment in the US increases, US annual interest rates increase. This can be attributed to different economic conditions and factors unique to these countries.
+
+
+```{r}
+# Calculate the correlation matrix between US interest rates and other 
+# countries' investments
+# Use nested apply functions to calculate the correlation between each 
+# country's investment and each US interest rate column
+apply(data1.wide[,2:ncol(data1.wide)], 2, FUN = function(rate){
+  apply(data2[,2:ncol(data2)], MARGIN = 1, FUN = function(x){
+    cor(rate, x)
+  })
+}) -> corr.mat
+
+# Round the correlation coefficients to 2 decimal places and convert to a data frame
+corr.mat %>% 
+  round(2) %>% 
+  data.frame() -> corr.mat.df
+
+# Rename row and column names to the countries and months, respectively, 
+# and print the table using kable() and kable_styling()
+rownames(corr.mat.df) <- data2$Country
+colnames(corr.mat.df) <- month.abb
+corr.mat.df %>% kableExtra::kable() %>% 
+  kable_styling(position = "center")
+
+```
+
+The table above shows the correlation coefficients between the interest rates of the United States and investments in the US made by various countries. Each value in the table represents a correlation coefficient for a specific month of the year. Negative values indicate that the interest rates and investments are negatively correlated, while positive values indicate a positive correlation. Countries with the highest negative correlation coefficients include Italy, France, and Belgium, while Venezuela has a consistently positive correlation, indicating a strong reliance on the US market. Other countries such as Canada, Austria, South Africa, and Israel have moderately negative correlation coefficients, while Australia has consistently negative values. The data suggests that interest rates in the US have a significant impact on investments made by other countries. 
+
+
+# Statistical Analysis: Uncovering Trends and Patterns
+
+
+## Feature Selection using LASSO Regression
+
+Lasso (Least Absolute Shrinkage and Selection Operator) regression is used in this analysis for feature selection because it can help select a subset of relevant features while reducing the impact of irrelevant features. In my case, the correlation between independent variables (US Interest Rates in Each Month) are non-negligible. It will lead to singularity when solving the coefficient for regression coefficients. Lasso regression can help address this issue by adding a regularization term to the linear regression cost function. This regularization term limits the magnitude of the model coefficients, effectively shrinking them towards zero. As a result, Lasso regression can effectively "remove" irrelevant variables by setting their corresponding coefficients to zero. One of the benefits of Lasso regression is that it can significantly reduce the number of variables used in the model (compared to using all available variables), which can help reduce overfitting and improve generalization performance. This is especially useful in this situation.
+
+```{r, warning=FALSE}
+# select all columns except TIME and assign to data1.wide.tmp
+data1.wide %>% select(-TIME) -> data1.wide.tmp
+# assign month abbreviations as column names
+colnames(data1.wide.tmp) <- month.abb
+# add a Year column to data1.wide.tmp and move it to the first column
+data1.wide.tmp <- data1.wide.tmp %>% mutate(Year = seq(2007, 2021)) %>% 
+  select(Year, everything())
+
+# get unique country names
+Countries <- data2.long$Country %>% unique()
+
+# filter data2.long by country k and join with data1.wide.tmp by Year
+data2.long %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  left_join(data1.wide.tmp, by = "Year") %>% 
+  group_by(Country) %>% 
+  mutate(Position = scale(Position)) %>% 
+  ungroup() -> data2.long.v2
+
+# split the data for training and validation periods
+data2.long.v2 %>% 
+  filter(Year %in% seq(2007, 2015)) %>% 
+  select(-Year, -Country) -> data2.long.v2.tr
+
+data2.long.v2 %>% 
+  filter(Year %in% seq(2016, 2021)) %>% 
+  select(-Year, -Country) -> data2.long.v2.val
+
+# perform 10-fold cross-validation to select optimal lambda value for LASSO
+set.seed(1)
+cv.glmnet(x = as.matrix(data2.long.v2.tr %>% select(-Position)), 
+          y = as.numeric(data2.long.v2.tr$Position), 
+          alpha = 1, 
+          standardize = TRUE, 
+          intercept = TRUE, 
+          family = "gaussian", 
+          n_folds = 10, 
+          type.measure = "mse") -> lasso_cv
+
+# plot the cross-validation results
+plot(lasso_cv)
+```
+
+The Lambda Plot above displays the relationship between the mean-squared error (MSE) and the logarithm of the penalty parameter lambda, for a set of values of lambda determined by the cross-validation procedure. The x-axis of the plot represents the log of lambda, and the y-axis represents the cross-validated MSE. The points on the plot show the cross-validated MSE obtained for different values of lambda, and the vertical lines show one standard error above (dotted line) and below (dashed line) the minimum mean MSE. The purpose of the plot is to provide guidance in selecting the optimal value of lambda for the model. In general, the optimal value of lambda corresponds to the minimum MSE, which occurs where the curve reaches its lowest point. However, it is often suggested to consider choosing a value of lambda within one standard error of the minimum to account for any instability in the estimate of the minimum. In my case, the optimal value of lambda was selected corresponding to the minimum MSE. 
+
+
+```{r}
+# fit a LASSO model with the selected lambda value and get the selected features
+lasso_fit <- glmnet(
+    x = as.matrix(data2.long.v2.tr %>% select(-Position)), 
+    y = as.numeric(data2.long.v2.tr$Position), 
+    alpha = 1,
+    standardize = TRUE,
+    intercept = TRUE,
+    family = "gaussian",
+    lambda = lasso_cv$lambda.min
+)
+print(lasso_fit$beta)
+month.selected <- month.abb[which(lasso_fit$beta != 0)]
+print(month.selected)
+```
+
+After setting the selected optimal value of lambda, the features with non-zero coefficients are "Jan", "Feb", "Apr", "Jun", "Jul", "Aug", "Sep", "Nov", and "Dec". Since there exists high multicollinearity in the explanatory variables, after adding penalization, a subset of features were selected to balance the prediction performance and model complexity.  
+
+
+```{r}
+pred.lasso.val <- predict(lasso_fit, as.matrix(data2.long.v2.val %>% select(-Position)))
+RMSE.lasso.val <- mean((pred.lasso.val - data2.long.v2.val$Position) ** 2) ** (1/2)
+pred.lasso.tr <- predict(lasso_fit, as.matrix(data2.long.v2.tr %>% select(-Position)))
+RMSE.lasso.tr <- mean((pred.lasso.tr - data2.long.v2.tr$Position) ** 2) ** (1/2)
+
+sprintf("RMSE (lasso, tr): %.4f; RMSE (lasso, val): %.4f", 
+        RMSE.lasso.tr, RMSE.lasso.val) %>% 
+  cat()
+```
+
+
+
+## Random Forest Model
+
+```{r}
+data2.long.v2.tr %>% 
+  gather(key = "key", value = "value", -Position) %>% 
+  mutate(key = factor(key, levels = month.abb)) %>% 
+  ggplot() + 
+  geom_point(aes(x = jitter(value), y = Position)) + 
+  geom_smooth(aes(x = jitter(value), y = Position)) + 
+  facet_wrap(~key) + 
+  xlab("Interest Rate") + 
+  ylab("Position (Normalized)")
+```
+
+From the figure above, we can see that, there exists nonlinear relationship between investment in US and interest rate. 
+
+```{r, fig.width=6, fig.height=6}
+data2.long.v2.tr %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "number")
+```
+
+According to the correlation coefficient above, there exists serious multicollinearity in the explanatory variable. 
+
+Random forest is a machine learning model that is particularly useful for dealing with multicollinearity among independent variables and for modeling non-linear relationships between the explanatory variables and the response variable. When there is multicollinearity among independent variables, it can be difficult to identify the true relationship between each variable and the response variable, as the correlation among variables can lead to unstable or even inaccurate estimates of coefficients. Random forest helps address this issue by building multiple decision trees on random subsets of variables, which can break the correlation between variables and improve the accuracy of the model.
+
+Random forest is also well-suited for modeling non-linear relationships between explanatory variables and the response variable, as it is a non-parametric model that does not assume linearity or any specific parametric form of the relationship. Instead, it can find complex and non-linear relationships that may not be captured by traditional linear regression models.
+
+In addition, random forest can provide a measure of feature importance, which can be useful for identifying the most important independent variables in the model. Feature importance is calculated as the reduction in impurity or error of the model when a particular variable is included, averaged over all the decision trees in the forest. Variables with high feature importance are considered more important in predicting the outcome variable, while variables with low importance may not contribute much to the model.
+
+```{r}
+# build the random forest model
+model.rf <- randomForest(Position ~ ., data = data2.long.v2.tr, 
+                         ntree = 100, mtry=10)
+model.rf
+
+pred.rf.val <- predict(model.rf, data2.long.v2.val)
+RMSE.rf.val <- mean((pred.rf.val - data2.long.v2.val$Position) ** 2) ** (1/2)
+pred.rf.tr <- predict(model.rf, data2.long.v2.tr)
+RMSE.rf.tr <- mean((pred.rf.tr - data2.long.v2.tr$Position) ** 2) ** (1/2)
+
+sprintf("RMSE (rf, tr): %.4f; RMSE (rf, val): %.4f", 
+        RMSE.rf.tr, RMSE.rf.val) %>% 
+  cat()
+
+model.rf$importance %>% 
+  data.frame() %>% 
+  mutate(month = month.name) %>% 
+  ggplot() + 
+  geom_col(aes(x = reorder(month, -IncNodePurity), 
+               y = IncNodePurity), width = 0.5,fill="#d85847") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  xlab("Month") + ylab("Variable Importance Measure")
+  ggtitle("Variable Importance in Random Forest Model")
+                                                              
+
+```
+
+
+
+
+
+
+
+

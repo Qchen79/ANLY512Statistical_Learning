@@ -1,0 +1,42 @@
+---
+title: "data_clean"
+output: pdf_document
+date: "2023-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(glmnet)
+library(kableExtra)
+library(randomForest)
+```
+
+```{r}
+
+# Read in the CSV files
+data1 <- read.csv("us interest rate.csv")
+data2 <- read.csv("other country investment_v2.csv", header = FALSE)
+
+# Select only the necessary columns from data1 and rename the columns
+data1 %>% 
+  select(TIME, Value) -> data1
+
+# Convert the TIME column to a date format
+data1 %>% 
+  mutate(TIME = paste0(TIME, "-01")) %>% # add "-01" to the end of each date string to represent the first day of the month
+  mutate(TIME = as.Date(TIME)) -> data1 # convert the TIME column to a date format
+
+# Rename the columns in data2
+colnames(data2) <- c("Country", seq(2007, 2021))
+
+# Remove leading/trailing whitespaces from the Country column in data2
+data2 %>% 
+  mutate(Country = trimws(Country)) -> data2
+
+write.csv(data1, file = "us_interest_rate_cleaned.csv")
+write.csv(data2, file = "other_country_investment_cleaned.csv")
+
+```
+
